@@ -26,29 +26,6 @@ func main() {
 		}
 
 		// handle the connections in a new goroutine
-		go handleConnection(conn)
+		go HandleConnection(conn)
 	}
-}
-
-func handleConnection(conn net.Conn) {
-	// close the connection when we're done
-	defer conn.Close()
-
-	// read incoming data
-	buf := make([]byte, 1024)
-	_, err := conn.Read(buf)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// send back the data
-	_, err = conn.Write(buf)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// print the incoming data
-	fmt.Printf("Received: %s", buf)
 }
