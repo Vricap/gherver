@@ -15,7 +15,14 @@ type Response struct {
 }
 
 func SendResponse(conn net.Conn, h *resHeaders, b *resBody) (error, any) {
-	res := fmt.Sprintf("%s%s%s%s%s\n%s", h.responesLine, h.server, h.date, h.contType, h.contLength, b.body)
+	h.contLength = strconv.Itoa(len(b.body))
+	res := fmt.Sprintf(`%s
+Server: %s
+Date: %s
+Content-Type: %s
+Content-Length: %s
+
+%s`, h.responLine, h.server, h.date, h.contType, h.contLength, b.body)
 	_, err := conn.Write([]byte(res))
 	if err != nil {
 		return err, nil
@@ -24,11 +31,11 @@ func SendResponse(conn net.Conn, h *resHeaders, b *resBody) (error, any) {
 }
 
 type resHeaders struct { // use MAP...
-	responesLine []byte
-	server       []byte
-	date         []byte
-	contType     []byte
-	contLength   []byte
+	responLine string
+	server     string
+	date       string
+	contType   string
+	contLength string
 }
 
 func NewResponseHeader() *resHeaders {
@@ -36,16 +43,16 @@ func NewResponseHeader() *resHeaders {
 
 	// default header
 	header := &resHeaders{
-		responesLine: []byte("HTTP/1.1 200 OK" + "\r\n"),
-		server:       []byte("Server: " + "Vricap" + "\r\n"),
-		date:         []byte("Date: " + fmt.Sprintf("%v %s %v", y, m, d) + "\r\n"),
-		contType:     []byte("Content-Type: " + "text/html" + "\r\n"),
-		contLength:   []byte("Content-Length: " + "69" + "\r\n"),
+		responLine: "HTTP/1.1 200 OK",
+		server:     "Vricap",
+		date:       fmt.Sprintf("%v %s %v", y, m, d),
+		contType:   "text/html",
+		contLength: "69",
 	}
 	return header
 }
 
-func (h *resHeaders) responseLine(code int) {
+func (h *resHeaders) setStatusCode(code int) {
 	StatusCodes := map[int]string{
 		// 1xx: Informational
 		100: "Continue",
@@ -119,7 +126,7 @@ func (h *resHeaders) responseLine(code int) {
 		510: "Not Extended",
 		511: "Network Authentication Required",
 	}
-	h.responesLine = []byte("HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code] + "\r\n")
+	h.responLine = "HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code]
 }
 
 type resBody struct {
@@ -143,10 +150,25 @@ func HandleConnection(conn net.Conn) {
 		return
 	}
 
-	// send back the data
+	// make a new header
 	header := NewResponseHeader()
-	header.responseLine(404)
-	body := NewResponseBody([]byte(buf))
+	// set your own headers
+	header.setStatusCode(200)
+	header.contType = "text/html"
+	// set response body
+	// body := NewResponseBody(buf)
+	body := NewResponseBody([]byte(`
+<html>
+	<head>
+		<title>Test</title>
+	</head>
+	<body>
+		<h1>Hello World!</h1>
+		<p>Foo Bar</p>
+	</body>
+</html>`))
+
+	// send back the response
 	err, data := SendResponse(conn, header, body)
 	if err != nil {
 		fmt.Println(err)
