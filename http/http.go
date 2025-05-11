@@ -10,51 +10,42 @@ import (
 const SIZE int = 1024 // size of the data the server will read. 1kb.
 
 type Response struct {
-	Headers *res_headers
-	Body    *res_body
+	Headers *resHeaders
+	Body    *resBody
 }
 
-func (r *Response) join() []byte {
-	rs := []byte{}
-	rs = append(rs, r.Headers.join()...)
-	rs = append(rs, []byte("\r\n")...)
-	rs = append(rs, r.Body.join()...)
-	return rs
+func SendResponse(conn net.Conn, h *resHeaders, b *resBody) (error, any) {
+	res := fmt.Sprintf("%s%s%s%s%s\n%s", h.responesLine, h.server, h.date, h.contType, h.contLength, b.body)
+	_, err := conn.Write([]byte(res))
+	if err != nil {
+		return err, nil
+	}
+	return nil, res
 }
 
-type res_headers struct { // use MAP...
-	response_line []byte
-	server        []byte
-	date          []byte
-	cont_type     []byte
-	cont_length   []byte
+type resHeaders struct { // use MAP...
+	responesLine []byte
+	server       []byte
+	date         []byte
+	contType     []byte
+	contLength   []byte
 }
 
-func (h *res_headers) join() []byte {
-	r := []byte{}
-	r = append(r, h.response_line...)
-	r = append(r, h.server...)
-	r = append(r, h.date...)
-	r = append(r, h.cont_type...)
-	r = append(r, h.cont_length...)
-	return r
-}
-
-func NewResponseHeader() *res_headers {
+func NewResponseHeader() *resHeaders {
 	y, m, d := time.Now().Date()
 
 	// default header
-	header := &res_headers{
-		response_line: []byte("HTTP/1.1 200 OK" + "\r\n"),
-		server:        []byte("Server: " + "Vricap" + "\r\n"),
-		date:          []byte("Date: " + fmt.Sprintf("%v %s %v", y, m, d) + "\r\n"),
-		cont_type:     []byte("Content-Type: " + "text/html" + "\r\n"),
-		cont_length:   []byte("Content-Length: " + "69" + "\r\n"),
+	header := &resHeaders{
+		responesLine: []byte("HTTP/1.1 200 OK" + "\r\n"),
+		server:       []byte("Server: " + "Vricap" + "\r\n"),
+		date:         []byte("Date: " + fmt.Sprintf("%v %s %v", y, m, d) + "\r\n"),
+		contType:     []byte("Content-Type: " + "text/html" + "\r\n"),
+		contLength:   []byte("Content-Length: " + "69" + "\r\n"),
 	}
 	return header
 }
 
-func (h *res_headers) responseLine(code int) {
+func (h *resHeaders) responseLine(code int) {
 	StatusCodes := map[int]string{
 		// 1xx: Informational
 		100: "Continue",
@@ -128,17 +119,16 @@ func (h *res_headers) responseLine(code int) {
 		510: "Not Extended",
 		511: "Network Authentication Required",
 	}
-	h.response_line = []byte("HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code] + "\r\n")
+	h.responesLine = []byte("HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code] + "\r\n")
 }
 
-// func (h *res_headers)
-
-type res_body struct {
+type resBody struct {
 	body []byte
 }
 
-func (rs *res_body) join() []byte {
-	return rs.body
+func NewResponseBody(b []byte) *resBody {
+	body := &resBody{body: b}
+	return body
 }
 
 func HandleConnection(conn net.Conn) {
@@ -156,21 +146,13 @@ func HandleConnection(conn net.Conn) {
 	// send back the data
 	header := NewResponseHeader()
 	header.responseLine(404)
-	body := &res_body{
-		// body: []byte("Helo World!" + "\r\n"),
-		// body: []byte("<html><body><h1>Helo world!</h1></body></html>"),
-		body: []byte(buf), // send back the data from the request, along with the http response header
-	}
-	res := &Response{
-		Headers: header,
-		Body:    body,
-	}
-	_, err = conn.Write([]byte(res.join()))
+	body := NewResponseBody([]byte(buf))
+	err, data := SendResponse(conn, header, body)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	// print the incoming data
-	fmt.Printf("Received: %s", res.join())
+	fmt.Printf("Received: %s", data)
 }
