@@ -1,4 +1,4 @@
-package main
+package http
 
 import (
 	"fmt"
@@ -70,7 +70,8 @@ func HandleConnection(conn net.Conn) {
 	}
 	body := &res_body{
 		// body: []byte("Helo World!" + "\r\n"),
-		body: []byte(buf),
+		// body: []byte("<html><body><h1>Helo world!</h1></body></html>"),
+		body: []byte(buf), // send back the data from the request, along with the http response header
 	}
 	res := &Response{
 		Headers: header,

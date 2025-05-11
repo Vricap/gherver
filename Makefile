@@ -1,5 +1,5 @@
 build:
-	go build -o gherver ./src
+	go build -o gherver main.go
 	./gherver
 
 run:

@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net"
+
+	"github.com/vricap/gherver/http"
 )
 
 const ADDR string = "127.0.0.1"
@@ -26,6 +28,6 @@ func main() {
 		}
 
 		// handle the connections in a new goroutine
-		go HandleConnection(conn)
+		go http.HandleConnection(conn)
 	}
 }
