@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/vricap/gherver/http"
 )
@@ -11,23 +10,28 @@ const ADDR string = "127.0.0.1"
 const PORT string = ":8000"
 
 func main() {
-	// listen for incoming connections on port 8000
-	ln, err := net.Listen("tcp", ADDR+PORT)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Println("TCP listening on", ADDR+PORT)
+	h := http.Init()
 
-	// accept incoming connections and handle them
-	for {
-		conn, err := ln.Accept()
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
+	// make / set a default new response header
+	h.Response.Headers.NewResponseHeader()
 
-		// handle the connections in a new goroutine
-		go http.HandleConnection(conn)
-	}
+	// set your own headers
+	h.Response.Headers.SetStatusCode(200)
+	h.Response.Headers.ContType = "text/html"
+
+	// set response body
+	h.Response.Body.NewResponseBody([]byte(`
+	<html>
+		<head>
+			<title>Test</title>
+		</head>
+		<body>
+			<h1>Hello World!</h1>
+			<p>Foo Bar</p>
+		</body>
+	</html>`))
+
+	// start the server
+	fmt.Println("Server listening on: " + ADDR + PORT)
+	h.StartServer(ADDR, PORT)
 }

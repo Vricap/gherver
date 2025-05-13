@@ -9,20 +9,54 @@ import (
 
 const SIZE int = 1024 // size of the data the server will read. 1kb.
 
+func Init() *http {
+	return &http{
+		Response: &Response{
+			Headers: &resHeaders{},
+			Body:    &resBody{},
+		},
+	}
+}
+
+type http struct {
+	Response *Response
+}
+
+func (h *http) StartServer(ADDR, PORT string) {
+	// listen for incoming connections on port 8000
+	ln, err := net.Listen("tcp", ADDR+PORT)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// accept incoming connections and handle them
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		// handle the connections in a new goroutine
+		go HandleConnection(conn, h)
+	}
+}
+
 type Response struct {
 	Headers *resHeaders
 	Body    *resBody
 }
 
-func SendResponse(conn net.Conn, h *resHeaders, b *resBody) (error, any) {
-	h.contLength = strconv.Itoa(len(b.body))
+func (rs *Response) SendResponse(conn net.Conn) (error, any) {
+	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.body))
 	res := fmt.Sprintf(`%s
 Server: %s
 Date: %s
 Content-Type: %s
 Content-Length: %s
 
-%s`, h.responLine, h.server, h.date, h.contType, h.contLength, b.body)
+%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Body.body)
 	_, err := conn.Write([]byte(res))
 	if err != nil {
 		return err, nil
@@ -31,28 +65,25 @@ Content-Length: %s
 }
 
 type resHeaders struct { // use MAP...
-	responLine string
-	server     string
-	date       string
-	contType   string
-	contLength string
+	ResponLine string
+	Server     string
+	Date       string
+	ContType   string
+	ContLength string
 }
 
-func NewResponseHeader() *resHeaders {
+func (rh *resHeaders) NewResponseHeader() {
 	y, m, d := time.Now().Date()
 
 	// default header
-	header := &resHeaders{
-		responLine: "HTTP/1.1 200 OK",
-		server:     "Vricap",
-		date:       fmt.Sprintf("%v %s %v", y, m, d),
-		contType:   "text/html",
-		contLength: "69",
-	}
-	return header
+	rh.ResponLine = "HTTP/1.1 200 OK"
+	rh.Server = "Vricap"
+	rh.Date = fmt.Sprintf("%v %s %v", y, m, d)
+	rh.ContType = "text/html"
+	rh.ContLength = "69"
 }
 
-func (h *resHeaders) setStatusCode(code int) {
+func (h *resHeaders) SetStatusCode(code int) {
 	StatusCodes := map[int]string{
 		// 1xx: Informational
 		100: "Continue",
@@ -126,19 +157,18 @@ func (h *resHeaders) setStatusCode(code int) {
 		510: "Not Extended",
 		511: "Network Authentication Required",
 	}
-	h.responLine = "HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code]
+	h.ResponLine = "HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code]
 }
 
 type resBody struct {
 	body []byte
 }
 
-func NewResponseBody(b []byte) *resBody {
-	body := &resBody{body: b}
-	return body
+func (rb *resBody) NewResponseBody(b []byte) {
+	rb.body = b
 }
 
-func HandleConnection(conn net.Conn) {
+func HandleConnection(conn net.Conn, h *http) {
 	// close the connection when we're done
 	defer conn.Close()
 
@@ -150,31 +180,13 @@ func HandleConnection(conn net.Conn) {
 		return
 	}
 
-	// make a new header
-	header := NewResponseHeader()
-	// set your own headers
-	header.setStatusCode(200)
-	header.contType = "text/html"
-	// set response body
-	// body := NewResponseBody(buf)
-	body := NewResponseBody([]byte(`
-<html>
-	<head>
-		<title>Test</title>
-	</head>
-	<body>
-		<h1>Hello World!</h1>
-		<p>Foo Bar</p>
-	</body>
-</html>`))
-
 	// send back the response
-	err, data := SendResponse(conn, header, body)
+	err, data := h.Response.SendResponse(conn)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// print the incoming data
+	// print the response data
 	fmt.Printf("Received: %s", data)
 }
