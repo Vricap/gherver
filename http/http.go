@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -15,11 +16,16 @@ func Init() *http {
 			Headers: &resHeaders{},
 			Body:    &resBody{},
 		},
+		Request: &Request{
+			Headers: &reqHeaders{},
+			Body:    &reqBody{},
+		},
 	}
 }
 
 type http struct {
 	Response *Response
+	Request  *Request
 }
 
 func (h *http) StartServer(ADDR, PORT string) {
@@ -43,20 +49,21 @@ func (h *http) StartServer(ADDR, PORT string) {
 	}
 }
 
+// TODO: add errors field
 type Response struct {
 	Headers *resHeaders
 	Body    *resBody
 }
 
 func (rs *Response) SendResponse(conn net.Conn) (error, any) {
-	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.body))
+	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.Body))
 	res := fmt.Sprintf(`%s
 Server: %s
 Date: %s
 Content-Type: %s
 Content-Length: %s
 
-%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Body.body)
+%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Body.Body)
 	_, err := conn.Write([]byte(res))
 	if err != nil {
 		return err, nil
@@ -161,11 +168,40 @@ func (h *resHeaders) SetStatusCode(code int) {
 }
 
 type resBody struct {
-	body []byte
+	Body []byte
 }
 
 func (rb *resBody) NewResponseBody(b []byte) {
-	rb.body = b
+	rb.Body = b
+}
+
+// TODO: add errors field
+type Request struct {
+	Headers *reqHeaders
+	Body    *reqBody
+}
+
+type reqHeaders struct {
+	Method  string
+	Path    string
+	HttpVer string
+}
+
+// var allMethod = map[string]string{
+// 	"GET":    "GET",
+// 	"POST":   "POST",
+// 	"DELETE": "DELETE",
+// }
+
+func (rh *reqHeaders) parseRequestHeaders(buf []byte) {
+	s := strings.Split(string(buf), " ")
+	rh.Method = s[0] // TODO: add supported method checking maybe???
+	rh.Path = s[1]
+	rh.HttpVer = s[2]
+}
+
+type reqBody struct {
+	Body []byte
 }
 
 func HandleConnection(conn net.Conn, h *http) {
@@ -180,6 +216,8 @@ func HandleConnection(conn net.Conn, h *http) {
 		return
 	}
 
+	// parse the request
+	h.Request.Headers.parseRequestHeaders(buf)
 	// send back the response
 	err, data := h.Response.SendResponse(conn)
 	if err != nil {
@@ -190,3 +228,23 @@ func HandleConnection(conn net.Conn, h *http) {
 	// print the response data
 	fmt.Printf("Received: %s", data)
 }
+
+/*
+EXAMPLE OF HTTP REQUEST FROM THE BROWSER
+
+GET / HTTP/1.1
+Host: localhost:8000
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:136.0) Gecko/20100101 Firefox/136.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,* /*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate, br, zstd
+Connection: keep-alive
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: none
+Sec-Fetch-User: ?1
+Priority: u=0, i
+
+--some request body i any--
+*/
