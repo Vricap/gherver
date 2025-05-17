@@ -15,7 +15,7 @@ func main() {
 	h.Routes = []*http.Routes{
 		{
 			Path:   "/",
-			Method: "GET",
+			Method: "PUT",
 			Handler: func(h *http.Http) {
 				// set your own headers
 				h.Response.Headers.SetStatusCode(200)

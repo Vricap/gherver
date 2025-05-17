@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -114,47 +115,16 @@ type resHeaders struct { // use MAP...
 func (h *resHeaders) SetStatusCode(code int) {
 	StatusCodes := map[int]string{
 		// 1xx: Informational
-		100: "Continue",
-		101: "Switching Protocols",
-		102: "Processing",
-		103: "Early Hints",
+		100: "Continue", 101: "Switching Protocols", 102: "Processing", 103: "Early Hints",
 
 		// 2xx: Success
-		200: "OK",
-		201: "Created",
-		202: "Accepted",
-		203: "Non-Authoritative Information",
-		204: "No Content",
-		205: "Reset Content",
-		206: "Partial Content",
-		207: "Multi-Status",
-		208: "Already Reported",
-		226: "IM Used",
+		200: "OK", 201: "Created", 202: "Accepted", 203: "Non-Authoritative Information", 204: "No Content", 205: "Reset Content", 206: "Partial Content", 207: "Multi-Status", 208: "Already Reported", 226: "IM Used",
 
 		// 3xx: Redirection
-		300: "Multiple Choices",
-		301: "Moved Permanently",
-		302: "Found",
-		303: "See Other",
-		304: "Not Modified",
-		305: "Use Proxy",
-		307: "Temporary Redirect",
-		308: "Permanent Redirect",
+		300: "Multiple Choices", 301: "Moved Permanently", 302: "Found", 303: "See Other", 304: "Not Modified", 305: "Use Proxy", 307: "Temporary Redirect", 308: "Permanent Redirect",
 
 		// 4xx: Client Error
-		400: "Bad Request",
-		401: "Unauthorized",
-		402: "Payment Required",
-		403: "Forbidden",
-		404: "Not Found",
-		405: "Method Not Allowed",
-		406: "Not Acceptable",
-		407: "Proxy Authentication Required",
-		408: "Request Timeout",
-		409: "Conflict",
-		410: "Gone",
-		411: "Length Required",
-		412: "Precondition Failed",
+		400: "Bad Request", 401: "Unauthorized", 402: "Payment Required", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 406: "Not Acceptable", 407: "Proxy Authentication Required", 408: "Request Timeout", 409: "Conflict", 410: "Gone", 411: "Length Required", 412: "Precondition Failed",
 		413: "Payload Too Large",
 		414: "URI Too Long",
 		415: "Unsupported Media Type",
@@ -208,17 +178,22 @@ type reqHeaders struct {
 	HttpVer string
 }
 
-// var allMethod = map[string]string{
-// 	"GET":    "GET",
-// 	"POST":   "POST",
-// 	"DELETE": "DELETE",
-// }
+var allMethod = map[string]string{
+	"GET":    "GET",
+	"POST":   "POST",
+	"DELETE": "DELETE",
+}
 
-func (rh *reqHeaders) parseRequestHeaders(buf []byte) {
+func (rh *reqHeaders) parseRequestHeaders(buf []byte) error {
 	s := strings.Split(string(buf), " ")
-	rh.Method = s[0] // TODO: add supported method checking maybe???
+	m, ok := allMethod[s[0]]
+	if !ok {
+		return errors.New(fmt.Sprintf("Method '%s' is not supported!", s[0]))
+	}
+	rh.Method = m
 	rh.Path = s[1]
 	rh.HttpVer = s[2]
+	return nil
 }
 
 type reqBody struct {
@@ -243,7 +218,11 @@ func HandleConnection(conn net.Conn, h *Http) {
 	fmt.Println("=============================\r\n\r\n")
 
 	// parse the request
-	h.Request.Headers.parseRequestHeaders(buf)
+	err = h.Request.Headers.parseRequestHeaders(buf)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
 	// handle request
 	for i, v := range h.Routes {
@@ -251,18 +230,19 @@ func HandleConnection(conn net.Conn, h *Http) {
 			v.Handler(h)
 			break
 		}
+		// if didn't find any route with such method, return 404
 		if i == len(h.Routes)-1 {
 			h.Response.Headers.SetStatusCode(404)
 			h.Response.Headers.ContType = "text/html"
 			h.Response.Body.NewResponseBody([]byte(`
 <html>
-<head>
-	<title>Error</title>
-</head>
-<body>
-	<h1>404 NOT FOUND!</h1>
-	<p>Request routes or http method didn't exist!</p>
-</body>
+	<head>
+		<title>Error</title>
+	</head>
+	<body>
+		<h1>404 NOT FOUND!</h1>
+		<p>Request routes or http method didn't exist!</p>
+	</body>
 </html>`))
 		}
 	}
