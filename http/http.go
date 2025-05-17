@@ -10,30 +10,24 @@ import (
 
 const SIZE int = 1024 // size of the data the server will read. 1kb.
 
-var ctx *Http = &Http{
-	Response: &Response{
-		Headers: &resHeaders{},
-		Body:    &resBody{},
-	},
-	Request: &Request{
-		Headers: &reqHeaders{},
-		Body:    &reqBody{},
-	},
-}
-
-var hand *Handler = &Handler{
-	GET: func(p string, f func(h *Http)) {
-	},
-}
-
 func Init() *Http {
-	return ctx
+	return &Http{
+		Response: &Response{
+			Headers: &resHeaders{},
+			Body:    &resBody{},
+		},
+		Request: &Request{
+			Headers: &reqHeaders{},
+			Body:    &reqBody{},
+		},
+		Routes: []*Routes{},
+	}
 }
 
 type Http struct {
 	Response *Response
 	Request  *Request
-	Handle   *Handler
+	Routes   []*Routes
 }
 
 func (h *Http) StartServer(ADDR, PORT string) {
@@ -57,8 +51,10 @@ func (h *Http) StartServer(ADDR, PORT string) {
 	}
 }
 
-type Handler struct {
-	GET func(string, func(*Http))
+type Routes struct {
+	Path    string
+	Method  string
+	Handler func(*Http)
 }
 
 // TODO: add errors field
@@ -67,8 +63,35 @@ type Response struct {
 	Body    *resBody
 }
 
-func (rs *Response) SendResponse(conn net.Conn) (error, any) {
+func (rs *Response) constructResponse() []byte {
+	// set some default value if user didn't set them
+	if len(rs.Headers.ResponLine) == 0 && len(rs.Body.Body) == 0 {
+		rs.Body.NewResponseBody([]byte(`
+<html>
+	<head>
+		<title>Error</title>
+	</head>
+	<body>
+		<h1>500 INTERNAL SERVER ERROR!</h1>
+		<p>Server didn't set the status code and the body!</p>
+	</body>
+</html>`))
+	}
 	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.Body))
+	if len(rs.Headers.ResponLine) == 0 {
+		rs.Headers.ResponLine = "HTTP/1.1 500 Internal Server Error"
+	}
+	if len(rs.Headers.Server) == 0 {
+		rs.Headers.Server = "GHERVER"
+	}
+	if len(rs.Headers.Date) == 0 {
+		y, m, d := time.Now().Date()
+		rs.Headers.Date = fmt.Sprintf("%v %s %v", y, m, d)
+	}
+	if len(rs.Headers.ContType) == 0 {
+		rs.Headers.ContType = "text/html"
+	}
+
 	res := fmt.Sprintf(`%s
 Server: %s
 Date: %s
@@ -76,11 +99,8 @@ Content-Type: %s
 Content-Length: %s
 
 %s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Body.Body)
-	_, err := conn.Write([]byte(res))
-	if err != nil {
-		return err, nil
-	}
-	return nil, res
+
+	return []byte(res)
 }
 
 type resHeaders struct { // use MAP...
@@ -89,17 +109,6 @@ type resHeaders struct { // use MAP...
 	Date       string
 	ContType   string
 	ContLength string
-}
-
-func (rh *resHeaders) NewResponseHeader() {
-	y, m, d := time.Now().Date()
-
-	// default header
-	rh.ResponLine = "HTTP / 1.1 200 OK"
-	rh.Server = "Vricap"
-	rh.Date = fmt.Sprintf("%v %s %v", y, m, d)
-	rh.ContType = "text/html"
-	rh.ContLength = "69"
 }
 
 func (h *resHeaders) SetStatusCode(code int) {
@@ -228,18 +237,50 @@ func HandleConnection(conn net.Conn, h *Http) {
 		return
 	}
 
+	fmt.Println("=============================")
+	fmt.Println("Here is the request from browser:")
+	fmt.Println(string(buf))
+	fmt.Println("=============================\r\n\r\n")
+
 	// parse the request
 	h.Request.Headers.parseRequestHeaders(buf)
 
+	// handle request
+	for i, v := range h.Routes {
+		if v.Path == h.Request.Headers.Path && v.Method == h.Request.Headers.Method {
+			v.Handler(h)
+			break
+		}
+		if i == len(h.Routes)-1 {
+			h.Response.Headers.SetStatusCode(404)
+			h.Response.Headers.ContType = "text/html"
+			h.Response.Body.NewResponseBody([]byte(`
+<html>
+<head>
+	<title>Error</title>
+</head>
+<body>
+	<h1>404 NOT FOUND!</h1>
+	<p>Request routes or http method didn't exist!</p>
+</body>
+</html>`))
+		}
+	}
+
+	// contruct the response
+	data := h.Response.constructResponse()
+
 	// send back the response
-	err, data := h.Response.SendResponse(conn)
+	_, err = conn.Write(data)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	// print the response data
-	fmt.Printf("Received: %s", data)
+	fmt.Println("=============================")
+	fmt.Println("Here is the response from server:")
+	fmt.Println(string(data))
+	fmt.Println("=============================\r\n\r\n")
 }
 
 /*
