@@ -15,23 +15,14 @@ func main() {
 	h.Routes = []*http.Routes{
 		{
 			Path:   "/",
-			Method: "PUT",
+			Method: "GET",
 			Handler: func(h *http.Http) {
 				// set your own headers
-				h.Response.Headers.SetStatusCode(200)
+				h.Response.Headers.SetStatusCode(200) // we didn't do any checking / validate the status code or content-type, it will simply send it as is as you wrote it
 				h.Response.Headers.ContType = "text/html"
 
 				// set response body
-				h.Response.Body.NewResponseBody([]byte(`
-<html>
-	<head>
-		<title>Root</title>
-	</head>
-	<body>
-		<h1>Hello World!</h1>
-		<p>Foo Bar</p>
-	</body>
-</html>`))
+				h.Response.SendHtml("./resource/index.html")
 			},
 		},
 		{
@@ -43,7 +34,7 @@ func main() {
 				h.Response.Headers.ContType = "text/html"
 
 				// set response body
-				h.Response.Body.NewResponseBody([]byte(`
+				h.Response.Body.NewResponseBody(`
 <html>
 	<head>
 		<title>Foo</title>
@@ -52,7 +43,7 @@ func main() {
 		<h1>Foo!</h1>
 		<p>Foo Bar</p>
 	</body>
-</html>`))
+</html>`)
 			},
 		},
 	}

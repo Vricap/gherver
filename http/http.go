@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -64,10 +65,19 @@ type Response struct {
 	Body    *resBody
 }
 
+func (rs *Response) SendHtml(path string) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	rs.Body.Body = data
+}
+
 func (rs *Response) constructResponse() []byte {
 	// set some default value if user didn't set them
 	if len(rs.Headers.ResponLine) == 0 && len(rs.Body.Body) == 0 {
-		rs.Body.NewResponseBody([]byte(`
+		rs.Body.NewResponseBody(`
 <html>
 	<head>
 		<title>Error</title>
@@ -76,7 +86,7 @@ func (rs *Response) constructResponse() []byte {
 		<h1>500 INTERNAL SERVER ERROR!</h1>
 		<p>Server didn't set the status code and the body!</p>
 	</body>
-</html>`))
+</html>`)
 	}
 	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.Body))
 	if len(rs.Headers.ResponLine) == 0 {
@@ -114,6 +124,7 @@ type resHeaders struct { // use MAP...
 
 func (h *resHeaders) SetStatusCode(code int) {
 	StatusCodes := map[int]string{
+		// i try to suppress the total loc :)
 		// 1xx: Informational
 		100: "Continue", 101: "Switching Protocols", 102: "Processing", 103: "Early Hints",
 
@@ -124,36 +135,10 @@ func (h *resHeaders) SetStatusCode(code int) {
 		300: "Multiple Choices", 301: "Moved Permanently", 302: "Found", 303: "See Other", 304: "Not Modified", 305: "Use Proxy", 307: "Temporary Redirect", 308: "Permanent Redirect",
 
 		// 4xx: Client Error
-		400: "Bad Request", 401: "Unauthorized", 402: "Payment Required", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 406: "Not Acceptable", 407: "Proxy Authentication Required", 408: "Request Timeout", 409: "Conflict", 410: "Gone", 411: "Length Required", 412: "Precondition Failed",
-		413: "Payload Too Large",
-		414: "URI Too Long",
-		415: "Unsupported Media Type",
-		416: "Range Not Satisfiable",
-		417: "Expectation Failed",
-		418: "I'm a teapot",
-		421: "Misdirected Request",
-		422: "Unprocessable Entity",
-		423: "Locked",
-		424: "Failed Dependency",
-		425: "Too Early",
-		426: "Upgrade Required",
-		428: "Precondition Required",
-		429: "Too Many Requests",
-		431: "Request Header Fields Too Large",
-		451: "Unavailable For Legal Reasons",
+		400: "Bad Request", 401: "Unauthorized", 402: "Payment Required", 403: "Forbidden", 404: "Not Found", 405: "Method Not Allowed", 406: "Not Acceptable", 407: "Proxy Authentication Required", 408: "Request Timeout", 409: "Conflict", 410: "Gone", 411: "Length Required", 412: "Precondition Failed", 413: "Payload Too Large", 414: "URI Too Long", 415: "Unsupported Media Type", 416: "Range Not Satisfiable", 417: "Expectation Failed", 418: "I'm a teapot", 421: "Misdirected Request", 422: "Unprocessable Entity", 423: "Locked", 424: "Failed Dependency", 425: "Too Early", 426: "Upgrade Required", 428: "Precondition Required", 429: "Too Many Requests", 431: "Request Header Fields Too Large", 451: "Unavailable For Legal Reasons",
 
 		// 5xx: Server Error
-		500: "Internal Server Error",
-		501: "Not Implemented",
-		502: "Bad Gateway",
-		503: "Service Unavailable",
-		504: "Gateway Timeout",
-		505: "HTTP Version Not Supported",
-		506: "Variant Also Negotiates",
-		507: "Insufficient Storage",
-		508: "Loop Detected",
-		510: "Not Extended",
-		511: "Network Authentication Required",
+		500: "Internal Server Error", 501: "Not Implemented", 502: "Bad Gateway", 503: "Service Unavailable", 504: "Gateway Timeout", 505: "HTTP Version Not Supported", 506: "Variant Also Negotiates", 507: "Insufficient Storage", 508: "Loop Detected", 510: "Not Extended", 511: "Network Authentication Required",
 	}
 	h.ResponLine = "HTTP/1.1 " + strconv.Itoa(code) + " " + StatusCodes[code]
 }
@@ -162,8 +147,8 @@ type resBody struct {
 	Body []byte
 }
 
-func (rb *resBody) NewResponseBody(b []byte) {
-	rb.Body = b
+func (rb *resBody) NewResponseBody(b string) {
+	rb.Body = []byte(b)
 }
 
 // TODO: add errors field
@@ -212,10 +197,10 @@ func HandleConnection(conn net.Conn, h *Http) {
 		return
 	}
 
-	fmt.Println("=============================")
+	fmt.Println("============================================================")
 	fmt.Println("Here is the request from browser:")
 	fmt.Println(string(buf))
-	fmt.Println("=============================\r\n\r\n")
+	fmt.Println("============================================================\r\n\r\n")
 
 	// parse the request
 	err = h.Request.Headers.parseRequestHeaders(buf)
@@ -234,7 +219,7 @@ func HandleConnection(conn net.Conn, h *Http) {
 		if i == len(h.Routes)-1 {
 			h.Response.Headers.SetStatusCode(404)
 			h.Response.Headers.ContType = "text/html"
-			h.Response.Body.NewResponseBody([]byte(`
+			h.Response.Body.NewResponseBody(`
 <html>
 	<head>
 		<title>Error</title>
@@ -243,7 +228,7 @@ func HandleConnection(conn net.Conn, h *Http) {
 		<h1>404 NOT FOUND!</h1>
 		<p>Request routes or http method didn't exist!</p>
 	</body>
-</html>`))
+</html>`)
 		}
 	}
 
@@ -257,10 +242,10 @@ func HandleConnection(conn net.Conn, h *Http) {
 		return
 	}
 
-	fmt.Println("=============================")
+	fmt.Println("============================================================")
 	fmt.Println("Here is the response from server:")
 	fmt.Println(string(data))
-	fmt.Println("=============================\r\n\r\n")
+	fmt.Println("============================================================\r\n\r\n")
 }
 
 /*
