@@ -10,25 +10,33 @@ import (
 
 const SIZE int = 1024 // size of the data the server will read. 1kb.
 
-func Init() *http {
-	return &http{
-		Response: &Response{
-			Headers: &resHeaders{},
-			Body:    &resBody{},
-		},
-		Request: &Request{
-			Headers: &reqHeaders{},
-			Body:    &reqBody{},
-		},
-	}
+var ctx *Http = &Http{
+	Response: &Response{
+		Headers: &resHeaders{},
+		Body:    &resBody{},
+	},
+	Request: &Request{
+		Headers: &reqHeaders{},
+		Body:    &reqBody{},
+	},
 }
 
-type http struct {
+var hand *Handler = &Handler{
+	GET: func(p string, f func(h *Http)) {
+	},
+}
+
+func Init() *Http {
+	return ctx
+}
+
+type Http struct {
 	Response *Response
 	Request  *Request
+	Handle   *Handler
 }
 
-func (h *http) StartServer(ADDR, PORT string) {
+func (h *Http) StartServer(ADDR, PORT string) {
 	// listen for incoming connections on port 8000
 	ln, err := net.Listen("tcp", ADDR+PORT)
 	if err != nil {
@@ -47,6 +55,10 @@ func (h *http) StartServer(ADDR, PORT string) {
 		// handle the connections in a new goroutine
 		go HandleConnection(conn, h)
 	}
+}
+
+type Handler struct {
+	GET func(string, func(*Http))
 }
 
 // TODO: add errors field
@@ -83,7 +95,7 @@ func (rh *resHeaders) NewResponseHeader() {
 	y, m, d := time.Now().Date()
 
 	// default header
-	rh.ResponLine = "HTTP/1.1 200 OK"
+	rh.ResponLine = "HTTP / 1.1 200 OK"
 	rh.Server = "Vricap"
 	rh.Date = fmt.Sprintf("%v %s %v", y, m, d)
 	rh.ContType = "text/html"
@@ -204,7 +216,7 @@ type reqBody struct {
 	Body []byte
 }
 
-func HandleConnection(conn net.Conn, h *http) {
+func HandleConnection(conn net.Conn, h *Http) {
 	// close the connection when we're done
 	defer conn.Close()
 
@@ -218,6 +230,7 @@ func HandleConnection(conn net.Conn, h *http) {
 
 	// parse the request
 	h.Request.Headers.parseRequestHeaders(buf)
+
 	// send back the response
 	err, data := h.Response.SendResponse(conn)
 	if err != nil {
