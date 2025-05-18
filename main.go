@@ -22,7 +22,8 @@ func main() {
 				h.Response.Headers.ContType = "text/html"
 
 				// set response body
-				h.Response.SendHtml("./resource/index.html")
+				h.Response.SendDocument("./resource/index.html")
+				// h.Response.SendMedia("./resource/gophers.png")
 			},
 		},
 		{
@@ -31,8 +32,7 @@ func main() {
 			Handler: func(h *http.Http) {
 				// set your own headers
 				h.Response.Headers.SetStatusCode(200)
-				h.Response.Headers.ContType = "text/html"
-
+				// h.Response.Headers.ContType = "text/html""
 				// set response body
 				h.Response.Body.NewResponseBody(`
 <html>

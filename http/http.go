@@ -72,6 +72,95 @@ func (rs *Response) SendHtml(path string) {
 	rs.Body.Body = data
 }
 
+func getExt(path string) string {
+	l := len(path) - 1
+	var ext []byte = []byte{}
+	for i := l; i != 0; i-- {
+		if path[i] == '.' {
+			break
+		}
+		ext = append([]byte(string(path[i])), ext...)
+	}
+	return string(ext)
+}
+
+func (rs *Response) SendDocument(path string) {
+	ext := getExt(path)
+	docuContTypes := map[string]string{
+		// Documents
+		"pdf":  "application/pdf",
+		"txt":  "text/plain",
+		"html": "text/html",
+		"htm":  "text/html",
+		"css":  "text/css",
+		"js":   "application/javascript",
+		"json": "application/json",
+		"xml":  "application/xml",
+		"csv":  "text/csv",
+
+		// Archives
+		"zip": "application/zip",
+		"tar": "application/x-tar",
+		"gz":  "application/gzip",
+		"rar": "application/vnd.rar",
+		"7z":  "application/x-7z-compressed",
+	}
+	t, ok := docuContTypes[ext]
+	if !ok {
+		fmt.Printf("Unsupported file type: '%s'\n", ext)
+		return
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	rs.Headers.ContType = t
+	rs.Body.Body = data
+}
+
+func (rs *Response) SendMedia(path string) {
+	ext := getExt(path)
+	mediaContypes := map[string]string{
+		// Images
+		"png":  "image/png",
+		"jpg":  "image/jpeg",
+		"jpeg": "image/jpeg",
+		"gif":  "image/gif",
+		"bmp":  "image/bmp",
+		"webp": "image/webp",
+		"svg":  "image/svg+xml",
+		"ico":  "image/x-icon",
+
+		// Videos
+		"mp4":  "video/mp4",
+		"webm": "video/webm",
+		"ogg":  "video/ogg",
+		"mov":  "video/quicktime",
+		"avi":  "video/x-msvideo",
+		"mkv":  "video/x-matroska",
+
+		// Audio
+		"mp3":  "audio/mpeg",
+		"wav":  "audio/wav",
+		"flac": "audio/flac",
+		"aac":  "audio/aac",
+		"m4a":  "audio/mp4",
+	}
+	t, ok := mediaContypes[ext]
+	if !ok {
+		fmt.Printf("Unsupported file type: '%s'\n", ext)
+		return
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	rs.Headers.ContType = t
+	rs.Body.Body = data
+}
+
 func (rs *Response) constructResponse() []byte {
 	// set some default value if user didn't set them
 	if len(rs.Headers.ResponLine) == 0 && len(rs.Body.Body) == 0 {
