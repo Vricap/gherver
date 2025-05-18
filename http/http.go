@@ -88,22 +88,10 @@ func (rs *Response) SendDocument(path string) {
 	ext := getExt(path)
 	docuContTypes := map[string]string{
 		// Documents
-		"pdf":  "application/pdf",
-		"txt":  "text/plain",
-		"html": "text/html",
-		"htm":  "text/html",
-		"css":  "text/css",
-		"js":   "application/javascript",
-		"json": "application/json",
-		"xml":  "application/xml",
-		"csv":  "text/csv",
+		"pdf": "application/pdf", "txt": "text/plain", "html": "text/html", "htm": "text/html", "css": "text/css", "js": "application/javascript", "json": "application/json", "xml": "application/xml", "csv": "text/csv",
 
 		// Archives
-		"zip": "application/zip",
-		"tar": "application/x-tar",
-		"gz":  "application/gzip",
-		"rar": "application/vnd.rar",
-		"7z":  "application/x-7z-compressed",
+		"zip": "application/zip", "tar": "application/x-tar", "gz": "application/gzip", "rar": "application/vnd.rar", "7z": "application/x-7z-compressed",
 	}
 	t, ok := docuContTypes[ext]
 	if !ok {
@@ -123,29 +111,13 @@ func (rs *Response) SendMedia(path string) {
 	ext := getExt(path)
 	mediaContypes := map[string]string{
 		// Images
-		"png":  "image/png",
-		"jpg":  "image/jpeg",
-		"jpeg": "image/jpeg",
-		"gif":  "image/gif",
-		"bmp":  "image/bmp",
-		"webp": "image/webp",
-		"svg":  "image/svg+xml",
-		"ico":  "image/x-icon",
+		"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp", "webp": "image/webp", "svg": "image/svg+xml", "ico": "image/x-icon",
 
 		// Videos
-		"mp4":  "video/mp4",
-		"webm": "video/webm",
-		"ogg":  "video/ogg",
-		"mov":  "video/quicktime",
-		"avi":  "video/x-msvideo",
-		"mkv":  "video/x-matroska",
+		"mp4": "video/mp4", "webm": "video/webm", "ogg": "video/ogg", "mov": "video/quicktime", "avi": "video/x-msvideo", "mkv": "video/x-matroska",
 
 		// Audio
-		"mp3":  "audio/mpeg",
-		"wav":  "audio/wav",
-		"flac": "audio/flac",
-		"aac":  "audio/aac",
-		"m4a":  "audio/mp4",
+		"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac", "aac": "audio/aac", "m4a": "audio/mp4",
 	}
 	t, ok := mediaContypes[ext]
 	if !ok {
