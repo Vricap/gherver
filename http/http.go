@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -59,7 +58,6 @@ type Routes struct {
 	Handler func(*Http)
 }
 
-// TODO: add errors field
 type Response struct {
 	Headers *resHeaders
 	Body    *resBody
@@ -151,7 +149,6 @@ func (rb *resBody) NewResponseBody(b string) {
 	rb.Body = []byte(b)
 }
 
-// TODO: add errors field
 type Request struct {
 	Headers *reqHeaders
 	Body    *reqBody
@@ -169,11 +166,15 @@ var allMethod = map[string]string{
 	"DELETE": "DELETE",
 }
 
-func (rh *reqHeaders) parseRequestHeaders(buf []byte) error {
+func (rh *reqHeaders) parseRequestHeaders(buf []byte) *err {
 	s := strings.Split(string(buf), " ")
 	m, ok := allMethod[s[0]]
 	if !ok {
-		return errors.New(fmt.Sprintf("Method '%s' is not supported!", s[0]))
+		return &err{
+			code:     501,
+			contType: "text/plain",
+			body:     fmt.Sprintf("Method 501 is not supported!"),
+		}
 	}
 	rh.Method = m
 	rh.Path = s[1]
@@ -183,6 +184,18 @@ func (rh *reqHeaders) parseRequestHeaders(buf []byte) error {
 
 type reqBody struct {
 	Body []byte
+}
+
+type err struct {
+	code     int
+	contType string
+	body     string
+}
+
+func (e *err) contructErrResponse(h *Http) {
+	h.Response.Headers.SetStatusCode(e.code)
+	h.Response.Headers.ContType = e.contType
+	h.Response.Body.NewResponseBody(e.body)
 }
 
 func HandleConnection(conn net.Conn, h *Http) {
@@ -203,10 +216,10 @@ func HandleConnection(conn net.Conn, h *Http) {
 	fmt.Println("============================================================\r\n\r\n")
 
 	// parse the request
-	err = h.Request.Headers.parseRequestHeaders(buf)
-	if err != nil {
-		fmt.Println(err)
-		return
+	e := h.Request.Headers.parseRequestHeaders(buf)
+	if e != nil {
+		e.contructErrResponse(h)
+		sendResponse(h, conn)
 	}
 
 	// handle request
@@ -232,16 +245,19 @@ func HandleConnection(conn net.Conn, h *Http) {
 		}
 	}
 
+	sendResponse(h, conn)
+}
+
+func sendResponse(h *Http, conn net.Conn) {
 	// contruct the response
 	data := h.Response.constructResponse()
 
 	// send back the response
-	_, err = conn.Write(data)
+	_, err := conn.Write(data)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-
 	fmt.Println("============================================================")
 	fmt.Println("Here is the response from server:")
 	fmt.Println(string(data))
