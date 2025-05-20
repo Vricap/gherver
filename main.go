@@ -11,6 +11,7 @@ const PORT string = ":8000"
 
 func main() {
 	h := http.Init()
+	h.LoadStatic("/static", "./resource")
 
 	h.Routes = []*http.Routes{
 		{
@@ -30,11 +31,9 @@ func main() {
 			Path:   "/foo",
 			Method: "GET",
 			Handler: func(h *http.Http) {
-				// set your own headers
 				h.Response.Headers.SetStatusCode(200)
-				// h.Response.Headers.ContType = "text/html""
-				// set response body
-				h.Response.Body.NewResponseBody(`
+				h.Response.Headers.ContType = "text/html"
+				h.Response.Body.Byte([]byte(`
 <html>
 	<head>
 		<title>Foo</title>
@@ -43,7 +42,7 @@ func main() {
 		<h1>Foo!</h1>
 		<p>Foo Bar</p>
 	</body>
-</html>`)
+</html>`))
 			},
 		},
 	}

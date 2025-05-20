@@ -22,6 +22,7 @@ func Init() *Http {
 			Body:    &reqBody{},
 		},
 		Routes: []*Routes{},
+		Static: []*Static{},
 	}
 }
 
@@ -29,6 +30,7 @@ type Http struct {
 	Response *Response
 	Request  *Request
 	Routes   []*Routes
+	Static   []*Static
 }
 
 func (h *Http) StartServer(ADDR, PORT string) {
@@ -50,6 +52,45 @@ func (h *Http) StartServer(ADDR, PORT string) {
 		// handle the connections in a new goroutine
 		go HandleConnection(conn, h)
 	}
+}
+
+func (h *Http) LoadStatic(prefix, dir string) {
+	fs, err := os.ReadDir(dir)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	for _, n := range fs {
+		path := dir + "/" + n.Name()
+		ext := getExt(path)
+		v, ok := docuContTypes[ext]
+		if !ok {
+			v, ok = mediaContypes[ext]
+			if !ok {
+				fmt.Printf("Unsupported file type: '%s'\n", ext)
+				return
+			}
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		h.Static = append(h.Static, &Static{
+			oriPath:    path,
+			prefixPath: prefix + "/" + n.Name(),
+			contType:   v,
+			content:    content,
+		})
+	}
+}
+
+type Static struct {
+	oriPath    string
+	prefixPath string
+	contType   string
+	content    []byte
 }
 
 type Routes struct {
@@ -84,15 +125,27 @@ func getExt(path string) string {
 	return string(ext)
 }
 
+var docuContTypes map[string]string = map[string]string{
+	// Documents
+	"pdf": "application/pdf", "txt": "text/plain", "html": "text/html", "htm": "text/html", "css": "text/css", "js": "application/javascript", "json": "application/json", "xml": "application/xml", "csv": "text/csv",
+
+	// Archives
+	"zip": "application/zip", "tar": "application/x-tar", "gz": "application/gzip", "rar": "application/vnd.rar", "7z": "application/x-7z-compressed",
+}
+
+var mediaContypes map[string]string = map[string]string{
+	// Images
+	"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp", "webp": "image/webp", "svg": "image/svg+xml", "ico": "image/x-icon",
+
+	// Videos
+	"mp4": "video/mp4", "webm": "video/webm", "ogg": "video/ogg", "mov": "video/quicktime", "avi": "video/x-msvideo", "mkv": "video/x-matroska",
+
+	// Audio
+	"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac", "aac": "audio/aac", "m4a": "audio/mp4",
+}
+
 func (rs *Response) SendDocument(path string) {
 	ext := getExt(path)
-	docuContTypes := map[string]string{
-		// Documents
-		"pdf": "application/pdf", "txt": "text/plain", "html": "text/html", "htm": "text/html", "css": "text/css", "js": "application/javascript", "json": "application/json", "xml": "application/xml", "csv": "text/csv",
-
-		// Archives
-		"zip": "application/zip", "tar": "application/x-tar", "gz": "application/gzip", "rar": "application/vnd.rar", "7z": "application/x-7z-compressed",
-	}
 	t, ok := docuContTypes[ext]
 	if !ok {
 		fmt.Printf("Unsupported file type: '%s'\n", ext)
@@ -109,16 +162,6 @@ func (rs *Response) SendDocument(path string) {
 
 func (rs *Response) SendMedia(path string) {
 	ext := getExt(path)
-	mediaContypes := map[string]string{
-		// Images
-		"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "bmp": "image/bmp", "webp": "image/webp", "svg": "image/svg+xml", "ico": "image/x-icon",
-
-		// Videos
-		"mp4": "video/mp4", "webm": "video/webm", "ogg": "video/ogg", "mov": "video/quicktime", "avi": "video/x-msvideo", "mkv": "video/x-matroska",
-
-		// Audio
-		"mp3": "audio/mpeg", "wav": "audio/wav", "flac": "audio/flac", "aac": "audio/aac", "m4a": "audio/mp4",
-	}
 	t, ok := mediaContypes[ext]
 	if !ok {
 		fmt.Printf("Unsupported file type: '%s'\n", ext)
@@ -136,7 +179,7 @@ func (rs *Response) SendMedia(path string) {
 func (rs *Response) constructResponse() []byte {
 	// set some default value if user didn't set them
 	if len(rs.Headers.ResponLine) == 0 && len(rs.Body.Body) == 0 {
-		rs.Body.NewResponseBody(`
+		rs.Body.Byte([]byte(`
 <html>
 	<head>
 		<title>Error</title>
@@ -145,7 +188,7 @@ func (rs *Response) constructResponse() []byte {
 		<h1>500 INTERNAL SERVER ERROR!</h1>
 		<p>Server didn't set the status code and the body!</p>
 	</body>
-</html>`)
+</html>`))
 	}
 	rs.Headers.ContLength = strconv.Itoa(len(rs.Body.Body))
 	if len(rs.Headers.ResponLine) == 0 {
@@ -206,8 +249,8 @@ type resBody struct {
 	Body []byte
 }
 
-func (rb *resBody) NewResponseBody(b string) {
-	rb.Body = []byte(b)
+func (rb *resBody) Byte(b []byte) {
+	rb.Body = b
 }
 
 type Request struct {
@@ -256,7 +299,7 @@ type err struct {
 func (e *err) contructErrResponse(h *Http) {
 	h.Response.Headers.SetStatusCode(e.code)
 	h.Response.Headers.ContType = e.contType
-	h.Response.Body.NewResponseBody(e.body)
+	h.Response.Body.Byte([]byte(e.body))
 }
 
 func HandleConnection(conn net.Conn, h *Http) {
@@ -283,6 +326,22 @@ func HandleConnection(conn net.Conn, h *Http) {
 		sendResponse(h, conn)
 	}
 
+	// handle static
+	if len(h.Static) != 0 {
+		for _, s := range h.Static {
+			route := &Routes{
+				Path:   s.prefixPath,
+				Method: "GET",
+				Handler: func(h *Http) {
+					h.Response.Headers.SetStatusCode(200)
+					h.Response.Headers.ContType = s.contType
+					h.Response.Body.Byte(s.content)
+				},
+			}
+			h.Routes = append(h.Routes, route)
+		}
+	}
+
 	// handle request
 	for i, v := range h.Routes {
 		if v.Path == h.Request.Headers.Path && v.Method == h.Request.Headers.Method {
@@ -293,7 +352,7 @@ func HandleConnection(conn net.Conn, h *Http) {
 		if i == len(h.Routes)-1 {
 			h.Response.Headers.SetStatusCode(404)
 			h.Response.Headers.ContType = "text/html"
-			h.Response.Body.NewResponseBody(`
+			h.Response.Body.Byte([]byte(`
 <html>
 	<head>
 		<title>Error</title>
@@ -302,7 +361,7 @@ func HandleConnection(conn net.Conn, h *Http) {
 		<h1>404 NOT FOUND!</h1>
 		<p>Request routes or http method didn't exist!</p>
 	</body>
-</html>`)
+</html>`))
 		}
 	}
 
