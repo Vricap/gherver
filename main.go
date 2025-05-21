@@ -32,17 +32,8 @@ func main() {
 			Method: "GET",
 			Handler: func(h *http.Http) {
 				h.Response.Headers.SetStatusCode(200)
-				h.Response.Headers.ContType = "text/html"
-				h.Response.Body.Byte([]byte(`
-<html>
-	<head>
-		<title>Foo</title>
-	</head>
-	<body>
-		<h1>Foo!</h1>
-		<p>Foo Bar</p>
-	</body>
-</html>`))
+				h.Response.Headers.ContType = "application/json"
+				h.Response.Body.Byte([]byte(`{"user_id": 1, "message": "Hello world"}`))
 			},
 		},
 	}
