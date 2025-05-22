@@ -1,10 +1,220 @@
-<html>
+<!doctype html>
+<html lang="en">
     <head>
-        <title>Hello World</title>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Portfolio - Vricap</title>
+        <link rel="stylesheet" href="/static/styles.css" />
     </head>
     <body>
-        <h1>Hello, World!</h1>
-        <p>Foo Bar</p>
-        <img src="/static/gophers.png" />
+        <header>
+            <h1>Vrica G. P.</h1>
+            <nav>
+                <a href="#about">About Me</a>
+                <a href="#projects">Projects</a>
+                <a href="#experience">Experience</a>
+                <a href="#contact">Contact</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <section id="about" class="section">
+                <h2>About Me</h2>
+                <div class="about-content">
+                    <p>
+                        <span>
+                            ꦱꦸꦒꦺꦁꦫꦮꦸꦃ! Iam Vrica Gede Penggalih and i'm a
+                            software engineer. Yes. That's it i think... The
+                            rest of this paragraph is just will be some
+                            gobbledygook to make this section more aesthetically
+                            pleasing.</span
+                        >
+                        <br /><br />
+                        Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+                        Nullam ligula dolor, convallis eu luctus non, porta nec
+                        odio. In sed est justo. Vivamus orci justo, efficitur ac
+                        quam non, volutpat egestas risus. Donec sed arcu nec
+                        tellus porta convallis in nec lectus. Donec ut magna
+                        ipsum. Mauris id libero viverra, blandit quam sit amet,
+                        pulvinar urna. Praesent eleifend sapien lectus, nec
+                        posuere sem vulputate ut. Ut porttitor arcu vel mi
+                        venenatis lacinia. Fusce dolor mi, maximus eu nibh ut,
+                        bibendum dignissim quam. Cras semper augue vulputate
+                        ligula vulputate, et semper nisi feugiat. Vestibulum
+                        vestibulum, augue eu fermentum facilisis, dolor nulla
+                        dapibus magna, euismod sodales mi ante quis magna. Donec
+                        congue tellus id scelerisque venenatis. Phasellus sed
+                        ipsum lectus. <br /><br />
+                        Aenean elit sapien, volutpat eu justo hendrerit, aliquet
+                        facilisis tortor. Nulla finibus diam sed eros faucibus,
+                        vel ultricies nulla condimentum. Pellentesque habitant
+                        morbi tristique senectus et netus et malesuada fames ac
+                        turpis egestas. Suspendisse varius dictum blandit. Sed
+                        euismod quam eget arcu volutpat, eget interdum arcu
+                        fermentum. Nam ornare, turpis a tempus pharetra, tortor
+                        justo fermentum tortor, a dapibus tortor libero et
+                        ligula. Cras interdum metus sed tempor aliquet. Quisque
+                        quis metus urna. Suspendisse consectetur tortor quis
+                        dolor blandit blandit nec id nibh. Maecenas imperdiet
+                        nibh nec lectus tempus convallis. Sed lobortis placerat
+                        eros ut aliquam. Morbi scelerisque non eros at lacinia.
+                    </p>
+                    <img
+                        src="/static/profile-img.jpg"
+                        alt="Vrica Gede Penggalih"
+                        class="about-image"
+                    />
+                </div>
+            </section>
+
+            <section id="projects" class="section">
+                <h2>Projects</h2>
+                <!-- <br /> -->
+                <p style="font-size: smaller">
+                    Selected from some of my projects. Visit my Github for all
+                    project i've ever done.
+                </p>
+                <div class="projects">
+                    <div class="project-card">
+                        <h3>
+                            <a href="https://github.com/vricap/kusmala"
+                                >kusmala</a
+                            >
+                        </h3>
+                        <p>
+                            My own programming language. kusmala is interpreted
+                            language with its syntax emphasizing on Indonesian
+                            Language. The interpreter written in Go.
+                        </p>
+                    </div>
+                    <div class="project-card">
+                        <h3>
+                            <a href="https://github.com/Vricap/taskm">taskm</a>
+                        </h3>
+                        <p>
+                            CLI based task manager (supposedly) - for linux.
+                            <br />
+                            A program to see running processes and overview of a
+                            computer. Written in Go.
+                        </p>
+                    </div>
+                    <div class="project-card">
+                        <h3>
+                            <a href="https://github.com/Vricap/battleship"
+                                >battleship</a
+                            >
+                        </h3>
+                        <p>
+                            A terminal based of the famous battleship game
+                            board. Along with its own COM player. Written in
+                            Python.
+                        </p>
+                    </div>
+                    <div class="project-card">
+                        <h3>
+                            <a href="https://github.com/Vricap/gompiler"
+                                >gompiler</a
+                            >
+                        </h3>
+                        <p>
+                            Gompiler is an live or online compiler for Go
+                            programming language.<br />
+                            <code
+                                >$ docker run -p 8000:8000 vricap/gompiler</code
+                            >
+                            to try.
+                        </p>
+                    </div>
+                    <div class="project-card">
+                        <h3>
+                            <a href="https://github.com/Vricap/Vbook-REST-API"
+                                >vbook</a
+                            >
+                        </h3>
+                        <p>
+                            My first attempt at building a REST-API. The
+                            tech-stack I use is: NodeJS with Express for server
+                            and API, MongoDB with Mongoose for database. <br />
+                            There are many features in the API that I created.
+                            Example; Sign-up, User Authorization/Authentication,
+                            Querying (sorting, filtering, fields, pagination),
+                            Advanced Error Handling, many CRUD operations,
+                            etc.<br />
+                            Documentation of the API visit
+                            <a
+                                href="https://documenter.getpostman.com/view/27790185/2s9YJW4kVm"
+                                >here</a
+                            >.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="experience" class="section">
+                <h2>Experience</h2>
+                <div class="experience">
+                    <h3>Internship at PT. Aino Teknologi</h3>
+                    <p>
+                        During my internship at Aino, I given a task to develop
+                        an ERP &mdash; Project Dashboard &mdash; for internal
+                        company use to better managing various project the
+                        company has using Laravel and Posgresql. The dashboard
+                        implement RBAC (Role-Based-Access-Control) system.
+                    </p>
+                </div>
+                <br />
+                <div class="sertificates">
+                    <h3>Some Sertificates</h3>
+                    <ul>
+                    	<li>
+                    		PT. Aino Internship:
+                    		<a href="sertificates/Vrica Gede Penggalih - Product Intern.pdf">Product Intern</a>
+                    	</li>
+                        <li>
+                            Dicoding:
+                            <a
+                                href="sertificates/sertifikat_ml_pemula_dicoding.pdf"
+                                target="_blank"
+                                >machine learning</a
+                            ><em> - i got 4/5 star in the final assignment</em>
+                        </li>
+                        <li>
+                            Dicoding:
+                            <a
+                                href="sertificates/sertifikat_backend_pemula_dicoding.pdf"
+                                target="_blank"
+                                >backend</a
+                            ><em> - i got 5/5 star in the final assignment</em>
+                        </li>
+                        <li>
+                            Dicoding:
+                            <a
+                                href="sertificates/sertifikat_aplikasi_flutter_pemula.pdf"
+                                target="_blank"
+                                >multi-platform/flutter</a
+                            ><em> - i got 3/5 star in the final assignment</em>
+                        </li>
+                    </ul>
+                </div>
+                <p><a href="Vrica-Gede-Penggalih-CV.pdf">See my CV.</a></p>
+            </section>
+
+            <section id="contact" class="section">
+                <h2>Contact</h2>
+                <p>
+                    Feel free to reach out via email at
+                    <a href="mailto:vricagedepenggalih@gmail.com"
+                        >vricagedepenggalih@gmail.com</a
+                    >
+                    or connect with me on
+                    <a
+                        href="https://www.linkedin.com/in/vrica-gede-penggalih-266277260/"
+                        >LinkedIn</a
+                    >. Visit my <a href="https://github.com/vricap">Github</a>.
+                </p>
+            </section>
+        </main>
+
+        <footer>&copy; 2025 Vricap</footer>
     </body>
 </html>
