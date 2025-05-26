@@ -258,20 +258,15 @@ type Request struct {
 	Body    *reqBody
 }
 
-type reqHeaders struct {
-	Method  string
-	Path    string
-	HttpVer string
-}
-
 var allMethod = map[string]string{
 	"GET":    "GET",
 	"POST":   "POST",
 	"DELETE": "DELETE",
 }
 
-func (rh *reqHeaders) parseRequestHeaders(buf []byte) *err {
-	s := strings.Split(string(buf), " ")
+func (r *Request) parseRequest(buf []byte) *err {
+	payload := strings.Split(string(buf), "\n")
+	s := strings.Split(string(payload[0]), " ")
 	m, ok := allMethod[s[0]]
 	if !ok {
 		return &err{
@@ -280,10 +275,31 @@ func (rh *reqHeaders) parseRequestHeaders(buf []byte) *err {
 			body:     fmt.Sprintf("Method 501 is not supported!"),
 		}
 	}
-	rh.Method = m
-	rh.Path = s[1]
-	rh.HttpVer = s[2]
+	r.Headers.Method = m
+	r.Headers.Path = s[1]
+	r.Headers.HttpVer = s[2]
+	r.Headers.Payloads = map[string]string{}
+
+	fmt.Println(payload[len(payload)-2])
+	for i, v := range payload {
+		if i == 0 {
+			continue
+		}
+		if v == "\r" {
+			r.Body.Body = []byte(payload[i+1])
+			break
+		}
+		s := strings.SplitN(v, ":", 2)
+		r.Headers.Payloads[s[0]] = strings.TrimSpace(s[1])
+	}
 	return nil
+}
+
+type reqHeaders struct {
+	Method   string
+	Path     string
+	HttpVer  string
+	Payloads map[string]string
 }
 
 type reqBody struct {
@@ -320,7 +336,7 @@ func HandleConnection(conn net.Conn, h *Http) {
 	fmt.Println("============================================================\r\n\r\n")
 
 	// parse the request
-	e := h.Request.Headers.parseRequestHeaders(buf)
+	e := h.Request.parseRequest(buf)
 	if e != nil {
 		e.contructErrResponse(h)
 		sendResponse(h, conn)
