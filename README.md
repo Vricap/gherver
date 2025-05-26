@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/vricap/gherver/http" // import the http package
+	"github.com/vricap/gherver/http" // import gherver http package
 )
 
 const ADDR string = "127.0.0.1"
@@ -30,6 +30,7 @@ func main() {
 	h := http.Init()
 	h.LoadStatic("/static", "./resource") // load static file
 
+	// define all the routes, along with the method and the handler
 	h.Routes = []*http.Routes{
 		{
 			Path:   "/",
