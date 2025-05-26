@@ -6,7 +6,7 @@
 
 
 ### USAGE  
-```
+```go
 package main
 
 import (
