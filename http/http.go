@@ -21,8 +21,9 @@ func Init() *Http {
 			Headers: &reqHeaders{},
 			Body:    &reqBody{},
 		},
-		Routes: []*Routes{},
-		Static: []*Static{},
+		Routes:  []*Routes{},
+		Static:  []*Static{},
+		Logging: true,
 	}
 }
 
@@ -31,6 +32,7 @@ type Http struct {
 	Request  *Request
 	Routes   []*Routes
 	Static   []*Static
+	Logging  bool
 }
 
 func (h *Http) StartServer(ADDR, PORT string) {
@@ -84,6 +86,10 @@ func (h *Http) LoadStatic(prefix, dir string) {
 			content:    content,
 		})
 	}
+}
+
+func (h *Http) DisableLog() {
+	h.Logging = false
 }
 
 type Static struct {
@@ -330,10 +336,12 @@ func HandleConnection(conn net.Conn, h *Http) {
 		return
 	}
 
-	fmt.Println("============================================================")
-	fmt.Println("Here is the request from browser:")
-	fmt.Println(string(buf))
-	fmt.Println("============================================================\r\n\r\n")
+	if h.Logging {
+		fmt.Println("============================================================")
+		fmt.Println("Here is the request from browser:")
+		fmt.Println(string(buf))
+		fmt.Println("============================================================\r\n\r\n")
+	}
 
 	// parse the request
 	e := h.Request.parseRequest(buf)
@@ -394,10 +402,12 @@ func sendResponse(h *Http, conn net.Conn) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("============================================================")
-	fmt.Println("Here is the response from server:")
-	fmt.Println(string(data))
-	fmt.Println("============================================================\r\n\r\n")
+	if h.Logging {
+		fmt.Println("============================================================")
+		fmt.Println("Here is the response from server:")
+		fmt.Println(string(data))
+		fmt.Println("============================================================\r\n\r\n")
+	}
 }
 
 /*
