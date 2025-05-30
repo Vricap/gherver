@@ -211,7 +211,13 @@ func (rs *Response) constructResponse() []byte {
 		rs.Headers.ContType = "text/html"
 	}
 	if len(rs.Headers.AccessControlAllowOrigin) == 0 {
-		rs.Headers.ContType = "*"
+		rs.Headers.AccessControlAllowOrigin = ""
+	}
+	if len(rs.Headers.AccessControlAllowHeaders) == 0 {
+		rs.Headers.AccessControlAllowHeaders = ""
+	}
+	if len(rs.Headers.AccessControlAllowMethods) == 0 {
+		rs.Headers.AccessControlAllowMethods = "GET, POST, OPTIONS, DELETE"
 	}
 
 	res := fmt.Sprintf(`%s
@@ -220,19 +226,23 @@ Date: %s
 Content-Type: %s
 Content-Length: %s
 Access-Control-Allow-Origin: %s
+Access-Control-Allow-Headers: %s
+Access-Control-Allow-Methods: %s
 
-%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Headers.AccessControlAllowOrigin, rs.Body.Body)
+%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Headers.AccessControlAllowOrigin, rs.Headers.AccessControlAllowHeaders, rs.Headers.AccessControlAllowMethods, rs.Body.Body)
 
 	return []byte(res)
 }
 
 type resHeaders struct { // use MAP...
-	ResponLine               string
-	Server                   string
-	Date                     string
-	ContType                 string
-	ContLength               string
-	AccessControlAllowOrigin string
+	ResponLine                string
+	Server                    string
+	Date                      string
+	ContType                  string
+	ContLength                string
+	AccessControlAllowOrigin  string
+	AccessControlAllowHeaders string
+	AccessControlAllowMethods string
 }
 
 func (h *resHeaders) SetStatusCode(code int) {
@@ -270,9 +280,10 @@ type Request struct {
 }
 
 var allMethod = map[string]string{
-	"GET":    "GET",
-	"POST":   "POST",
-	"DELETE": "DELETE",
+	"GET":     "GET",
+	"POST":    "POST",
+	"DELETE":  "DELETE",
+	"OPTIONS": "OPTIONS",
 }
 
 func (r *Request) parseRequest(buf []byte) *err {
@@ -373,6 +384,12 @@ func HandleConnection(conn net.Conn, h *Http) {
 
 	// handle request
 	for i, v := range h.Routes {
+		// handle preflight cors checking request
+		if h.Request.Headers.Method == "OPTIONS" {
+			h.Response.Headers.SetStatusCode(204)
+			h.Response.Headers.AccessControlAllowHeaders = "Content-Type"
+			sendResponse(h, conn)
+		}
 		if v.Path == h.Request.Headers.Path && v.Method == h.Request.Headers.Method {
 			v.Handler(h)
 			break

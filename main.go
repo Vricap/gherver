@@ -21,6 +21,7 @@ func main() {
 	h := http.Init()
 	// h.DisableLog() // to disable logging
 	h.LoadStatic("/static", "./resource") // load static file
+	h.Response.Headers.AccessControlAllowOrigin = "*"
 
 	h.Routes = []*http.Routes{
 		{
