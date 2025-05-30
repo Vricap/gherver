@@ -210,24 +210,29 @@ func (rs *Response) constructResponse() []byte {
 	if len(rs.Headers.ContType) == 0 {
 		rs.Headers.ContType = "text/html"
 	}
+	if len(rs.Headers.AccessControlAllowOrigin) == 0 {
+		rs.Headers.ContType = "*"
+	}
 
 	res := fmt.Sprintf(`%s
 Server: %s
 Date: %s
 Content-Type: %s
 Content-Length: %s
+Access-Control-Allow-Origin: %s
 
-%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Body.Body)
+%s`, rs.Headers.ResponLine, rs.Headers.Server, rs.Headers.Date, rs.Headers.ContType, rs.Headers.ContLength, rs.Headers.AccessControlAllowOrigin, rs.Body.Body)
 
 	return []byte(res)
 }
 
 type resHeaders struct { // use MAP...
-	ResponLine string
-	Server     string
-	Date       string
-	ContType   string
-	ContLength string
+	ResponLine               string
+	Server                   string
+	Date                     string
+	ContType                 string
+	ContLength               string
+	AccessControlAllowOrigin string
 }
 
 func (h *resHeaders) SetStatusCode(code int) {

@@ -30,6 +30,7 @@ func main() {
 				// set your own headers
 				h.Response.Headers.SetStatusCode(200) // we didn't do any checking / validate the status code or content-type, it will simply send it as is as you wrote it
 				h.Response.Headers.ContType = "text/html"
+				h.Response.Headers.AccessControlAllowOrigin = "*"
 
 				// set response body
 				h.Response.SendDocument("./resource/index.html") // send a document
