@@ -19,6 +19,7 @@ type Person struct {
 
 func main() {
 	h := http.Init()
+	// h.DisableLog() // to disable logging
 	h.LoadStatic("/static", "./resource") // load static file
 
 	h.Routes = []*http.Routes{
