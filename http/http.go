@@ -290,11 +290,12 @@ func (r *Request) parseRequest(buf []byte) *err {
 	payload := strings.Split(string(buf), "\n")
 	s := strings.Split(string(payload[0]), " ")
 	m, ok := allMethod[s[0]]
+	// if method is not supported
 	if !ok {
 		return &err{
 			code:     501,
 			contType: "text/plain",
-			body:     fmt.Sprintf("Method 501 is not supported!"),
+			body:     fmt.Sprintf("Method is not supported!"),
 		}
 	}
 	r.Headers.Method = m
